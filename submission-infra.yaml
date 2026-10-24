@@ -1,0 +1,15 @@
+cloudInfrastructure:
+  - type: EC2 Auto Scaling group
+    arn: <arn-or-other-identifier>
+    description: <one-line description>
+
+  - type: Application Load Balancer
+    arn: <arn-or-endpoint>
+    description: <one-line description>
+
+  - type: Lambda function
+    arn: <arn>
+    description: <one-line description>
+
+metaData:
+  qutUsernameTag: <qut-username@qut.edu.au>
