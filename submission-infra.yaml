@@ -8,8 +8,12 @@ cloudInfrastructure:
     description: <one-line description>
 
   - type: Lambda function
-    arn: <arn>
-    description: <one-line description>
+    arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-get-metadata
+    description: Lambda function to get metadata from videos
+
+  - type: DynamoDB table
+    arn: arn:aws:dynamodb:ap-southeast-2:901444280953:table/n12901270-a3-metadata
+    description: Stores metadata from videos
 
 metaData:
-  qutUsernameTag: <qut-username@qut.edu.au>
+  qutUsernameTag: <n12901270@qut.edu.au>
