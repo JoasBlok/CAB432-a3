@@ -11,9 +11,37 @@ cloudInfrastructure:
     arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-get-metadata
     description: Lambda function to get metadata from videos
 
+  - type: Lambda function
+    arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-create-metadata
+    description: Lambda function to create metadata based on sqs queue jobs
+
+  - type: Lambda function
+    arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-create-ecs-queue-job
+    description: Lambda function which gets triggered by DynamoDB streams to put new jobs in an sqs queue for the ecs worker to pick up
+
+  - type: SQS queue
+    arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-create-metadata
+    description: SQS queue for holding create metadata jobs for lambda
+
   - type: DynamoDB table
     arn: arn:aws:dynamodb:ap-southeast-2:901444280953:table/n12901270-a3-metadata
     description: Stores metadata from videos
+
+  - type: API Gateway endpoint
+    arn: arn:aws:apigateway:ap-southeast-2::/apis/98kpslafqb/routes/rpt6yz0
+    description: route for invoking the get metadata lambda function
+
+  - type: S3 bucket
+    arn: arn:aws:s3:::n12901270-a3-downloads
+    description: bucket for storing mp3 and mp4 files that have been worked on
+
+  - type: ECS cluster
+    arn: arn:aws:ecs:ap-southeast-2:901444280953:cluster/n12901270-a2-cluster
+    description: cluster for running ffmpeg workers
+
+  - type: ECR repository
+    arn: arn:aws:ecr:ap-southeast-2:901444280953:repository/n12901270/a3/ffmpeg
+    description: holds docker images for ECS ffmpeg workers
 
 metaData:
   qutUsernameTag: <n12901270@qut.edu.au>
