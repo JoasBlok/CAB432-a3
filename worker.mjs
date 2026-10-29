@@ -1,4 +1,4 @@
-// worker.js
+// worker.mjs
 // ECS worker: polls SQS for media jobs, downloads the source video, converts it
 // with ffmpeg, uploads the result to S3 and records the outcome in DynamoDB.
 //
@@ -48,7 +48,7 @@ export function loadConfig() {
     queueUrl: requireEnv("QUEUE_URL"),
     tableName: requireEnv("TABLE_NAME"),
     bucketName: requireEnv("BUCKET_NAME"),
-    s3KeyPrefix: process.env.S3_KEY_PREFIX ?? "",
+    s3KeyPrefix: process.env.S3_KEY_PREFIX ?? "mp3/",
     workDir: process.env.WORK_DIR ?? path.join(os.tmpdir(), "media-worker"),
     maxDownloadBytes: Number(process.env.MAX_DOWNLOAD_BYTES ?? 1024 ** 3), // 1 GiB
     downloadTimeoutMs: Number(process.env.DOWNLOAD_TIMEOUT_MS ?? 15 * 60_000),

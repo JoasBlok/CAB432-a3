@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY worker.js ./
+COPY worker.mjs ./
 
 # Run as the unprivileged user that ships with the node image
 USER node
