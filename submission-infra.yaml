@@ -43,5 +43,9 @@ cloudInfrastructure:
     arn: arn:aws:ecr:ap-southeast-2:901444280953:repository/n12901270/a3/ffmpeg
     description: holds docker images for ECS ffmpeg workers
 
+  - type: ECS Service
+    arn: arn:aws:ecs:ap-southeast-2:901444280953:service/n12901270-a2-cluster/n12901270-a3-ffmpeg-service-yi89n8ur
+    description: runs ffmpeg worker
+
 metaData:
   qutUsernameTag: <n12901270@qut.edu.au>
