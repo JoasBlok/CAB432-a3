@@ -443,8 +443,6 @@ export function convertToMp3(inputPath, outputPath, { bitrate }, timeoutMs) {
 /* DynamoDB + SQS helpers                                                     */
 /* -------------------------------------------------------------------------- */
 
-// Assumes the table's primary key is just `cacheKey`. If it has a sort key,
-// add it to Key below.
 async function updateStatus(
   ctx,
   cacheKey,

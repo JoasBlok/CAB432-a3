@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Video to MP3</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --text: #1b1f24;
+        --muted: #5f6b7a;
+        --border: #d5dae1;
+        --accent: #2563eb;
+        --accent-text: #ffffff;
+        --ok: #15803d;
+        --err: #b91c1c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101318;
+          --card: #1a1f27;
+          --text: #e8ebf0;
+          --muted: #9aa5b4;
+          --border: #2f3744;
+          --accent: #5b8def;
+          --accent-text: #0b0f15;
+          --ok: #4ade80;
+          --err: #f87171;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 560px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 1.4rem;
+      }
+      p.hint {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      form {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      input[type="url"] {
+        flex: 1 1 260px;
+        padding: 10px 12px;
+        font: inherit;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      input[type="url"]:focus-visible,
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      button {
+        padding: 10px 18px;
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent-text);
+        background: var(--accent);
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      #status {
+        margin: 16px 0 0;
+        min-height: 1.5em;
+        color: var(--muted);
+      }
+      #status.ok {
+        color: var(--ok);
+      }
+      #status.error {
+        color: var(--err);
+      }
+      #result {
+        margin-top: 12px;
+      }
+      #result a {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .logout {
+        margin: 0 0 12px;
+      }
+      #logout {
+        padding: 4px 10px;
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: var(--muted);
+        background: none;
+        border: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Video to MP3</h1>
+      <p class="logout"><button id="logout" type="button">Sign out</button></p>
+      <p class="hint">
+        Paste a direct link to a video file (for example ending in .mp4). Page
+        links such as YouTube won't work.
+      </p>
+
+      <form id="form">
+        <input
+          id="url"
+          type="url"
+          required
+          placeholder="https://example.com/video.mp4"
+          aria-label="Video link"
+        />
+        <button id="submit" type="submit">Convert</button>
+      </form>
+
+      <p id="status" role="status" aria-live="polite"></p>
+      <div id="result"></div>
+    </main>
+
+    <script>
+      // ============================================================
+      // REPLACE THESE VALUES WITH YOUR REAL DETAILS
+      // ============================================================
+
+      // 1. Base URL of your API, no trailing slash.
+      //    e.g. "https://abc123.execute-api.ap-southeast-2.amazonaws.com"
+      const API_BASE_URL =
+        "https://98kpslafqb.execute-api.ap-southeast-2.amazonaws.com";
+
+      // 2. Path of the endpoint. Your Lambda handles GET /a3/metadata
+      //    and reads the video link from the "cachedKey" query parameter.
+      const API_PATH = "/a3/metadata";
+      const QUERY_PARAM = "cachedKey";
+
+      // 3. How the login token is sent in the Authorization header.
+      //    "Bearer " suits most APIs. Use "" (empty) if your API expects the
+      //    raw token with no prefix.
+      const AUTH_SCHEME = "Bearer ";
+
+      // Page users are sent to when they are not signed in.
+      const LOGIN_PAGE = "login.html";
+
+      // ============================================================
+
+      const POLL_INTERVAL_MS = 4000; // how often to ask "is it done yet?"
+      const POLL_TIMEOUT_MS = 10 * 60000; // give up after 10 minutes
+
+      // ---- Session handling ----------------------------------------------
+      // The redirect below only hides the page. Your API must still verify
+      // the token itself.
+      const TOKEN_KEY = "authToken";
+      const USER_KEY = "authUser";
+
+      function getToken() {
+        try {
+          return localStorage.getItem(TOKEN_KEY);
+        } catch {
+          return null;
+        }
+      }
+
+      function signOut() {
+        try {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+        } catch {
+          /* ignore */
+        }
+        window.location.replace(LOGIN_PAGE);
+      }
+
+      if (!getToken()) window.location.replace(LOGIN_PAGE);
+      document.getElementById("logout").addEventListener("click", signOut);
+      // --------------------------------------------------------------------
+
+      const form = document.getElementById("form");
+      const urlInput = document.getElementById("url");
+      const submitBtn = document.getElementById("submit");
+      const statusEl = document.getElementById("status");
+      const resultEl = document.getElementById("result");
+
+      function setStatus(text, kind = "") {
+        statusEl.textContent = text;
+        statusEl.className = kind;
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      // One request to the API. Returns { status, data }.
+      async function checkJob(videoUrl) {
+        const endpoint = new URL(API_BASE_URL + API_PATH);
+        endpoint.searchParams.set(QUERY_PARAM, videoUrl);
+
+        const res = await fetch(endpoint, {
+          method: "GET",
+          headers: { Authorization: AUTH_SCHEME + getToken() },
+        });
+
+        // Token missing, expired or rejected: go back to the login page.
+        if (res.status === 401 || res.status === 403) {
+          signOut();
+          throw new Error("Your session has expired. Please sign in again.");
+        }
+
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          /* body may be empty */
+        }
+        return { status: res.status, data };
+      }
+
+      function showDownload(link) {
+        const a = document.createElement("a");
+        a.href = link;
+        a.textContent = "Download MP3";
+        a.rel = "noopener";
+        resultEl.replaceChildren(a);
+      }
+
+      async function run(videoUrl) {
+        const started = Date.now();
+
+        while (Date.now() - started < POLL_TIMEOUT_MS) {
+          const { status, data } = await checkJob(videoUrl);
+
+          // Done: the API returns { download, metadata }
+          if (status === 200 && data?.download) {
+            setStatus("Done!", "ok");
+            showDownload(data.download);
+            return;
+          }
+
+          // The worker marked the job as failed
+          if (data?.metadata?.status === "FAILED") {
+            throw new Error(data.metadata.error || "Conversion failed.");
+          }
+
+          // Still working (job created, or in progress)
+          if (status === 200 || status === 202 || status === 404) {
+            setStatus("Converting... this can take a minute.");
+            await sleep(POLL_INTERVAL_MS);
+            continue;
+          }
+
+          // Anything else is a real error
+          throw new Error(data?.error || `Request failed (HTTP ${status}).`);
+        }
+        throw new Error("Timed out waiting for the conversion.");
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const videoUrl = urlInput.value.trim();
+        if (!videoUrl) return;
+
+        submitBtn.disabled = true;
+        resultEl.replaceChildren();
+        setStatus("Sending request...");
+
+        try {
+          await run(videoUrl);
+        } catch (err) {
+          setStatus(err.message, "error");
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

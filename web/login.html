@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --text: #1b1f24;
+        --muted: #5f6b7a;
+        --border: #d5dae1;
+        --accent: #2563eb;
+        --accent-text: #ffffff;
+        --ok: #15803d;
+        --err: #b91c1c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101318;
+          --card: #1a1f27;
+          --text: #e8ebf0;
+          --muted: #9aa5b4;
+          --border: #2f3744;
+          --accent: #5b8def;
+          --accent-text: #0b0f15;
+          --ok: #4ade80;
+          --err: #f87171;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 400px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 16px;
+        font-size: 1.4rem;
+      }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .tabs button {
+        flex: 1;
+        padding: 8px;
+        font: inherit;
+        color: var(--muted);
+        background: none;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+      }
+      .tabs button[aria-selected="true"] {
+        color: var(--text);
+        font-weight: 600;
+        border-bottom-color: var(--accent);
+      }
+      label {
+        display: block;
+        margin: 0 0 12px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      input {
+        display: block;
+        width: 100%;
+        margin-top: 4px;
+        padding: 10px 12px;
+        font: 1rem inherit;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .primary {
+        width: 100%;
+        margin-top: 4px;
+        padding: 10px 18px;
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent-text);
+        background: var(--accent);
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .link {
+        margin-top: 12px;
+        padding: 0;
+        font: inherit;
+        font-size: 0.9rem;
+        color: var(--accent);
+        background: none;
+        border: 0;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .note {
+        margin: 0 0 16px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      #message {
+        margin: 14px 0 0;
+        min-height: 1.5em;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      #message.error {
+        color: var(--err);
+      }
+      #message.ok {
+        color: var(--ok);
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Video to MP3</h1>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-login" aria-selected="true">
+          Sign in
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-register"
+          aria-selected="false"
+        >
+          Register
+        </button>
+      </div>
+
+      <form id="form" novalidate>
+        <label
+          >Email
+          <input id="email" type="email" autocomplete="username" />
+        </label>
+        <label
+          >Password
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+          />
+        </label>
+        <label id="confirm-row" hidden
+          >Confirm password
+          <input id="confirm" type="password" autocomplete="new-password" />
+        </label>
+        <button id="submit" class="primary" type="submit">Sign in</button>
+      </form>
+
+      <p id="message" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      // ============================================================
+      // REPLACE THESE VALUES WITH YOUR REAL API DETAILS
+      // ============================================================
+
+      // Base URL of your API, no trailing slash.
+      const API_BASE_URL =
+        "https://98kpslafqb.execute-api.ap-southeast-2.amazonaws.com";
+
+      // Login endpoint. POST { username, password } -> { user, token }
+      // (same as your previous frontend).
+      const LOGIN_PATH = "/v1/auth/login";
+
+      // Register endpoint. POST { username, password }.
+      // Your previous frontend only had login, so CONFIRM THIS PATH AND BODY
+      // against your backend (or delete the Register tab if you don't need it).
+      const REGISTER_PATH = "/v1/auth/register";
+
+      // Page to open after signing in (your main page).
+      const MAIN_PAGE = "index.html";
+
+      // ============================================================
+
+      const TOKEN_KEY = "authToken";
+      const USER_KEY = "authUser";
+
+      const $ = (id) => document.getElementById(id);
+      const form = $("form");
+      const emailEl = $("email");
+      const passwordEl = $("password");
+      const confirmEl = $("confirm");
+      const submitBtn = $("submit");
+      const messageEl = $("message");
+
+      let mode = "login"; // "login" | "register"
+
+      function setMessage(text, kind = "") {
+        messageEl.textContent = text;
+        messageEl.className = kind;
+      }
+
+      function setMode(next) {
+        mode = next;
+        const isRegister = mode === "register";
+        $("tab-login").setAttribute("aria-selected", String(!isRegister));
+        $("tab-register").setAttribute("aria-selected", String(isRegister));
+        $("confirm-row").hidden = !isRegister;
+        passwordEl.autocomplete = isRegister
+          ? "new-password"
+          : "current-password";
+        submitBtn.textContent = isRegister ? "Create account" : "Sign in";
+        setMessage("");
+      }
+
+      $("tab-login").addEventListener("click", () => setMode("login"));
+      $("tab-register").addEventListener("click", () => setMode("register"));
+
+      async function post(path, body) {
+        const res = await fetch(API_BASE_URL + path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          /* empty body */
+        }
+        return { ok: res.ok, status: res.status, data };
+      }
+
+      async function login(username, password) {
+        const { ok, data } = await post(LOGIN_PATH, { username, password });
+
+        if (!ok) {
+          throw new Error(
+            data?.message || "Login failed. Please check your credentials.",
+          );
+        }
+
+        const { user, token } = data ?? {};
+        if (!token) {
+          throw new Error("Login succeeded but no token was returned.");
+        }
+
+        try {
+          localStorage.setItem(TOKEN_KEY, token);
+          if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+        } catch {
+          throw new Error(
+            "Could not save your session. Is browser storage blocked?",
+          );
+        }
+
+        window.location.href = MAIN_PAGE;
+      }
+
+      async function register(username, password) {
+        const { ok, data } = await post(REGISTER_PATH, { username, password });
+        if (!ok) {
+          throw new Error(data?.message || "Registration failed.");
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const username = emailEl.value.trim().toLowerCase();
+        const password = passwordEl.value;
+
+        if (!username || !password) {
+          return setMessage("Email and password are required.", "error");
+        }
+        if (mode === "register") {
+          if (password.length < 8)
+            return setMessage(
+              "Password must be at least 8 characters.",
+              "error",
+            );
+          if (password !== confirmEl.value)
+            return setMessage("Passwords do not match.", "error");
+        }
+
+        submitBtn.disabled = true;
+        const idleLabel = submitBtn.textContent;
+        setMessage("");
+
+        try {
+          if (mode === "register") {
+            submitBtn.textContent = "Creating account...";
+            await register(username, password);
+            setMessage("Account created. Signing in...", "ok");
+          }
+          submitBtn.textContent = "Logging in...";
+          await login(username, password);
+        } catch (err) {
+          setMessage(
+            err instanceof Error ? err.message : "Login failed.",
+            "error",
+          );
+          submitBtn.disabled = false;
+          submitBtn.textContent = idleLabel;
+        }
+      });
+
+      // Already signed in? Skip the form.
+      try {
+        if (localStorage.getItem(TOKEN_KEY)) window.location.replace(MAIN_PAGE);
+      } catch {
+        /* storage blocked: show the form */
+      }
+    </script>
+  </body>
+</html>
