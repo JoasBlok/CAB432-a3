@@ -15,6 +15,10 @@ cloudInfrastructure:
     arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-cleanup
     description: Lambda function triggered by eventbridge schedule to remove expired records and objects from dynamodb and s3
 
+  - type: Lambda function
+    arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-failed-job
+    description: triggered by a dead letter queue, marks a job as failed
+
   - type: SQS queue
     arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-create-metadata
     description: SQS queue for holding create metadata jobs for lambda
@@ -27,13 +31,17 @@ cloudInfrastructure:
     arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-ecs-dlq
     description: dead letter queue for the ecs queue, jobs get sent here after 5 failed attempts at being delivered
 
-  - type: DynamoDB table
-    arn: arn:aws:dynamodb:ap-southeast-2:901444280953:table/n12901270-a3-metadata
-    description: Stores metadata from videos
-
   - type: API Gateway endpoint
     arn: arn:aws:apigateway:ap-southeast-2::/apis/98kpslafqb/routes/rpt6yz0
     description: route for invoking the get metadata lambda function
+
+  - type: Cognito user pool
+    arn: arn:aws:cognito-idp:ap-southeast-2:901444280953:userpool/ap-southeast-2_T9AarySHq
+    description: contains registered users
+
+  - type: DynamoDB table
+    arn: arn:aws:dynamodb:ap-southeast-2:901444280953:table/n12901270-a3-metadata
+    description: Stores metadata from videos
 
   - type: S3 bucket
     arn: arn:aws:s3:::n12901270-a3-downloads
@@ -48,7 +56,7 @@ cloudInfrastructure:
     description:
 
   - type: Eventbridge schedule
-    arn: arn:aws:scheduler:ap-southeast-2:901444280953:schedule/default/n12901270-a3-cleanup
+    arn: arn:aws:scheduler:ap-southeast-2:901444280953:schedule/default/n12901270-a3-cleanup-schedule
     description: Triggers the cleanup lambda every hour
 
   - type: ECS cluster
