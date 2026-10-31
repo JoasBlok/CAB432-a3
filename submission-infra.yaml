@@ -1,12 +1,4 @@
 cloudInfrastructure:
-  - type: EC2 Auto Scaling group
-    arn: <arn-or-other-identifier>
-    description: <one-line description>
-
-  - type: Application Load Balancer
-    arn: <arn-or-endpoint>
-    description: <one-line description>
-
   - type: Lambda function
     arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-get-metadata
     description: Lambda function to get metadata from videos
@@ -19,9 +11,21 @@ cloudInfrastructure:
     arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-create-ecs-queue-job
     description: Lambda function which gets triggered by DynamoDB streams to put new jobs in an sqs queue for the ecs worker to pick up
 
+  - type: Lambda function
+    arn: arn:aws:lambda:ap-southeast-2:901444280953:function:n12901270-a3-cleanup
+    description: Lambda function triggered by eventbridge schedule to remove expired records and objects from dynamodb and s3
+
   - type: SQS queue
     arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-create-metadata
     description: SQS queue for holding create metadata jobs for lambda
+
+  - type: SQS queue
+    arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-ecs-queue
+    description: SQS containing jobs for the ffmpeg worker on ecs
+
+  - type: SQS dead letter queue
+    arn: arn:aws:sqs:ap-southeast-2:901444280953:n12901270-a3-ecs-dlq
+    description: dead letter queue for the ecs queue, jobs get sent here after 5 failed attempts at being delivered
 
   - type: DynamoDB table
     arn: arn:aws:dynamodb:ap-southeast-2:901444280953:table/n12901270-a3-metadata
@@ -35,6 +39,18 @@ cloudInfrastructure:
     arn: arn:aws:s3:::n12901270-a3-downloads
     description: bucket for storing mp3 and mp4 files that have been worked on
 
+  - type: S3 bucket
+    arn: arn:aws:s3:::n12901270-a3-frontend
+    description: bucket containing frontend html files
+
+  - type: Cloudfront distribution
+    arn: arn:aws:cloudfront::901444280953:distribution/E1RQ93DTXP60J0
+    description:
+
+  - type: Eventbridge schedule
+    arn: arn:aws:scheduler:ap-southeast-2:901444280953:schedule/default/n12901270-a3-cleanup
+    description: Triggers the cleanup lambda every hour
+
   - type: ECS cluster
     arn: arn:aws:ecs:ap-southeast-2:901444280953:cluster/n12901270-a2-cluster
     description: cluster for running ffmpeg workers
@@ -46,6 +62,10 @@ cloudInfrastructure:
   - type: ECS Service
     arn: arn:aws:ecs:ap-southeast-2:901444280953:service/n12901270-a2-cluster/n12901270-a3-ffmpeg-service-yi89n8ur
     description: runs ffmpeg worker
+
+  - type: ECS Service auto scaling
+    arn: arn:aws:iam::901444280953:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService
+    description: Service auto scaling on the ecs service, based on average cpu utilization
 
 metaData:
   qutUsernameTag: <n12901270@qut.edu.au>
