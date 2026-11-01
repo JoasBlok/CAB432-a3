@@ -53,7 +53,7 @@ cloudInfrastructure:
 
   - type: Cloudfront distribution
     arn: arn:aws:cloudfront::901444280953:distribution/E1RQ93DTXP60J0
-    description:
+    description: Hosts the frontend
 
   - type: Eventbridge schedule
     arn: arn:aws:scheduler:ap-southeast-2:901444280953:schedule/default/n12901270-a3-cleanup-schedule
@@ -76,4 +76,4 @@ cloudInfrastructure:
     description: Service auto scaling on the ecs service, based on average cpu utilization
 
 metaData:
-  qutUsernameTag: <n12901270@qut.edu.au>
+  qutUsernameTag: n12901270@qut.edu.au
